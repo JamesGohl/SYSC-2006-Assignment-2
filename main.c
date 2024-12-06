@@ -24,42 +24,35 @@ int main()
 
     fclose(csv_file);
     printf("WELCOME TO FACEBOOK\n");
+
+    unsigned short int user_choice = 0;
     while (true)
     {
         print_menu();
-        unsigned short int user_choice = 0;
         while (true)
         {
-            if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 7)
+            if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 4)
             {
                 break;
             }
-            printf("user_choice is %hu", user_choice);
             printf("Your input is invalid please try again: ");
         }
         switch (user_choice)
         {
         case 1:
-            register_user(users);
+            users = register_user(users);
             break;
         case 2:
-            manage_profile(users);
+            login(users);
+            printf("hi\n");
             break;
         case 3:
-            manage_posts(users);
-            break;
-        case 4:
-            manage_friends(users);
-            break;
-        case 5:
-            display_posts(users);
-            break;
-        case 6:
             printf("Goodbye! Thank you for using the program.\n");
             teardown(users);
             exit(0);
             break;
         }
     }
+
     return 0;
 }

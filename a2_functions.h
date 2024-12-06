@@ -24,13 +24,13 @@ user_t *find_user(user_t *users, const char *username);
    Function that creates a new friend's node.
    Return the newly created node.
 */
-friend_t *create_friend(const char *username);
+friend_t *create_friend(user_t *users, const char *username);
 
 /*
    Function that links a friend to a user. The friend's name should be added into
    a sorted (ascending order) linked list.
 */
-void add_friend(user_t *user, const char *friend);
+void add_friend(user_t *user,user_t *users, const char *friend);
 
 /*
    Function that removes a friend from a user's friend list.
@@ -66,12 +66,12 @@ void display_all_user_posts(user_t *user);
 void display_user_friends(user_t *user);
 
 /*
-   Function that displays "number" of posts for a given user.
+   Function that displays "number" of posts for a given friend.
    After displaying "number" posts, it prompts if you want to display
    more posts.
    If there are no more post or the user types “n” or “N”, the function returns.
 */
-void display_posts_by_n(user_t *users, int number);
+void display_posts_by_n(friend_t *friend, int number);
 
 /*
    Function that free all users from the database before quitting the application.
@@ -94,16 +94,40 @@ user_t *read_CSV_and_create_users(FILE *file, int num_users);
 /********** DON'T MODIFY **********/
 
 // Extra functions' Prototypes/Declarations go here
-#endif
+
+/*
+   Function that prints the secondary menu with a list of options for the user to choose from
+*/
+void print_menu2(user_t *user);
+/*
+If the user logs in in goes to this list of options 
+*/
+void menu2_func(user_t *user, user_t *users);
+
+/*
+If the entered username and password is correct the user is logged in and the options
+are displayed
+*/
+void login(user_t *users);
+
+
+/*
+   Function that searches if the username is a friend of the user
+   Return a pointer to the user if found and NULL if not found.
+*/
+friend_t *find_friend(user_t *user, char *username);
+
+
 
 void get_input_password(char *password);
 void get_input_username(char *username);
 void print_post_menu(user_t *user);
 void print_friend_menu(user_t *user);
-void manage_friends(user_t *users);
+void manage_friends(user_t *user, user_t *users);
 void free_friends(friend_t *friends);
 void free_posts(post_t *friends);
-void display_posts(user_t *users);
-void register_user(user_t *users);
-void manage_profile(user_t *users);
-void manage_posts(user_t *users);
+void display_friend_posts(user_t *users);
+user_t *register_user(user_t *users);
+void manage_profile(user_t *user);
+void manage_posts(user_t *user);
+#endif

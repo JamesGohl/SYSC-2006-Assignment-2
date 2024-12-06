@@ -9,6 +9,7 @@
 #include <stdbool.h>
 #include <assert.h>
 #include <time.h>
+#include <ctype.h>
 #include "a2_nodes.h"
 #include "a2_functions.h"
 
@@ -47,7 +48,7 @@ user_t *read_CSV_and_create_users(FILE *file, int num_users)
         {
             if (strcmp(token, " ") != 0)
             {
-                add_friend(current_user, token);
+                add_friend(current_user, users, token);
             }
             token = strtok(NULL, ",");
             count++;
@@ -66,15 +67,15 @@ user_t *read_CSV_and_create_users(FILE *file, int num_users)
 void print_menu()
 {
     printf("***********************************************\n"
+           "\tWelcome to Text-Based Facebook\n"
+           "***********************************************\n\n\n"
+           "***********************************************\n"
            "\t\tMAIN MENU:\n"
            "***********************************************\n"
            "1. Register a new user\n"
-           "2. Manage a user's profile (change profile)\n"
-           "3. Manage a user's posts (add/remove)\n"
-           "4. Manage a user's friends (add/remove)\n"
-           "5. Display a user's posts\n"
-           "6. Exit\n\n"
-           "Enter Your choice ");
+           "2. Login with exitising user's information\n"
+           "3. Exit\n"
+           "Enter Your choice: ");
 }
 user_t *add_user(user_t *users, const char *username, const char *password)
 {
@@ -85,6 +86,7 @@ user_t *add_user(user_t *users, const char *username, const char *password)
     new_user->next = NULL;
     new_user->posts = NULL;
     new_user->friends = NULL;
+    new_user->posts = NULL;
     if (users == NULL)
     {
         return new_user;
@@ -112,7 +114,7 @@ void get_input_password(char *password)
 {
     while (true)
     {
-        if (scanf("%s", password) == 1 && strlen(password) >= MIN_PASSWORD && strlen(password) < MAX_PASSWORD)
+        if (scanf("%s", password) == 1 && strlen(password) >= MIN_PASSWORD)
         {
             break;
         }
@@ -123,11 +125,15 @@ void get_input_username(char *username)
 {
     while (true)
     {
-        if (scanf("%s", username) == 1 && strlen(username) < MAX_USERNAME)
+        if (scanf("%s", username) == 1)
         {
+            for (int i = 0; i < strlen(username); i++)
+            {
+                username[i] = tolower(username[i]);
+            }
             break;
         }
-        printf("Your username is invalid. It must be less than 30 characters. Please try again: ");
+        printf("Your username is invalid. Please try again: ");
     }
 }
 user_t *find_user(user_t *users, const char *username)
@@ -193,9 +199,9 @@ void print_friend_menu(user_t *user)
            "3. Return to main menu\n"
            "Enter your choice: ");
 }
-void add_friend(user_t *user, const char *friend)
+void add_friend(user_t *user, user_t *users, const char *friend)
 {
-    friend_t *new_friend = create_friend(friend);
+    friend_t *new_friend = create_friend(users, friend);
 
     friend_t *current, *previous;
     previous = NULL;
@@ -213,12 +219,16 @@ void add_friend(user_t *user, const char *friend)
     else
         previous->next = new_friend;
 }
-friend_t *create_friend(const char *username)
+friend_t *create_friend(user_t *users, const char *username)
 {
+    
     friend_t *new_friend = malloc(sizeof(friend_t));
     assert(new_friend != NULL);
     strcpy(new_friend->username, username);
     new_friend->next = NULL;
+    new_friend->posts = NULL;
+    user_t *friend_user = find_user(users, username);
+    new_friend->posts = &(friend_user->posts);
     return new_friend;
 }
 void display_user_friends(user_t *user)
@@ -230,59 +240,59 @@ void display_user_friends(user_t *user)
         printf("%d-  %s\n", i, current->username);
     }
 }
-void manage_friends(user_t *users)
+void manage_friends(user_t *user, user_t *users)
 {
-    char username[MAX_USERNAME];
     unsigned short int user_choice = 0;
-    printf("Enter a username to update their friends: ");
-    get_input_username(username);
-    user_t *user_friend_manage;
-    user_friend_manage = (find_user(users, username));
-    if (user_friend_manage == NULL)
+    printf("Updating Friends\n");
+
+    while (true)
     {
-        printf("------------------------------------------------\n"
-               "\t\tUser not found.\n"
-               "------------------------------------------------\n");
-    }
-    else
-    {
+        print_friend_menu(user);
+        char username[MAX_USERNAME];
         while (true)
         {
-            print_friend_menu(user_friend_manage);
-            char friend[MAX_USERNAME];
-            while (true)
+            if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 4)
             {
-                if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 4)
-                {
-                    break;
-                }
-                printf("Your input is invalid. Enter a value between 1 and 3 please try again: ");
-            }
-            if (user_choice == 1)
-            {
-                printf("Enter a new friends name: ");
-                get_input_username(friend);
-                add_friend(user_friend_manage, friend);
-                printf("Friend added to the list.\n");
-            }
-            if (user_choice == 2)
-            {
-                printf("List of %s's friends:\n", user_friend_manage->username);
-                display_user_friends(user_friend_manage);
-                printf("Enter a friend's name to delete: ");
-                get_input_username(friend);
-                if (delete_friend(user_friend_manage, friend) == true)
-                {
-                    printf("Updated list of %s's friends\n", user_friend_manage->username);
-                    display_user_friends(user_friend_manage);
-                    break;
-                }
-                else
-                    printf("Invalid friend's name\n");
-            }
-            if (user_choice == 3)
                 break;
+            }
+            printf("Your input is invalid. Enter a value between 1 and 3 please try again: ");
         }
+        if (user_choice == 1)
+        {
+            printf("Enter a new friends name: ");
+            get_input_username(username);
+            user_t *new_friend = find_user(users, username);
+            friend_t *old_friend = find_friend(user, username);
+            if(strcmp(user->username, username) == 0)
+            {
+                printf("You cannot be a friend to yourself. Returning to friend's menu.\n");
+            }
+            else if (new_friend != NULL && old_friend == NULL)
+            {
+                add_friend(user, users, username);
+            }
+            else
+            {
+                printf("Friend does not exist or is already friend. Returning to friend's menu.\n");
+            }
+        }
+        if (user_choice == 2)
+        {
+            printf("List of %s's friends:\n", user->username);
+            display_user_friends(user);
+            printf("Enter a friend's name to delete: ");
+            get_input_username(username);
+            if (delete_friend(user, username) == true)
+            {
+                printf("Updated list of %s's friends\n", user->username);
+                display_user_friends(user);
+                break;
+            }
+            else
+                printf("Invalid friend's name\n");
+        }
+        if (user_choice == 3)
+            return;
     }
 }
 _Bool delete_friend(user_t *user, char *friend_name)
@@ -347,37 +357,46 @@ void free_posts(post_t *posts)
         posts = current;
     }
 }
-void display_posts(user_t *users)
+void display_friend_posts(user_t *user)
 {
-    printf("Enter a username for which you would like to display their posts: ");
+    printf("Enter a friend for which you would like to display their posts: ");
     char username[MAX_USERNAME];
     get_input_username(username);
-    user_t *user = find_user(users, username);
-    if (user == NULL)
+    friend_t *friend = find_friend(user, username);
+    if (friend == NULL)
     {
         printf("------------------------------------------------\n"
-               "\t\tUser not found.\n"
+               "\t\tFriend not found.\n"
                "------------------------------------------------\n");
     }
     else
     {
-        display_posts_by_n(user, NUM_POSTS);
+        display_posts_by_n(friend, NUM_POSTS);
     }
 }
-void display_posts_by_n(user_t *user, int number)
+friend_t *find_friend(user_t *user, char *username)
 {
-    if (user->posts == NULL)
+    friend_t *current;
+    for (current = user->friends; current != NULL && strcmp(current->username, username) != 0; current = current->next)
     {
-        printf("%s has no posts \n", user->username);
+    }
+    return current;
+}
+void display_posts_by_n(friend_t *friend, int number)
+{
+    printf("THIS IS A TEST\n");
+    if ((*friend->posts) == NULL)
+    {
+        printf("%s has no posts \n", friend->username);
         return;
     }
     printf("------------------------------------------------\n"
            "\t\t%s's posts\n",
-           user->username);
+           friend->username);
     post_t *current;
     int i = 1;
-
-    for (current = user->posts; current != NULL && i <= number; current = current->next, i++)
+    
+    for (current = *(friend->posts); current != NULL && i <= number; current = current->next, i++)
     {
         printf("- %s\n", current->content);
         if (current->next == NULL)
@@ -406,89 +425,146 @@ void display_posts_by_n(user_t *user, int number)
                 number += NUM_POSTS;
                 printf("------------------------------------------------\n"
                        "\t\t%s's posts\n",
-                       user->username);
+                       friend->username);
             }
         }
     }
 }
-void register_user(user_t *users)
+user_t *register_user(user_t *users)
 {
     char username[MAX_USERNAME];
     char password[MAX_PASSWORD];
     printf("Enter a username: ");
     get_input_username(username);
-    printf("Enter an up to 15 character password of at least 8 characters: ");
-    get_input_password(password);
-    users = add_user(users, username, password);
+    user_t *new_user = find_user(users, username);
+    if (new_user != NULL)
+    {
+        printf("The username just entered already exists. Returning to main menu.\n");
+    }
+    else
+    {
+        printf("Enter an up to 15 character password of at least 8 characters: ");
+        get_input_password(password);
+        users = add_user(users, username, password);
+    }
+    return users;
 }
-void manage_profile(user_t *users)
+
+void manage_profile(user_t *user)
+{
+    char password[MAX_PASSWORD];
+    printf("Updating Password\nEnter your old password: ");
+    scanf("%s", password);
+    if (strcmp(user->password, password) == 0)
+    {
+        printf("Enter a new password up to 14 characters: ");
+        get_input_password(password);
+        strcpy(user->password, password);
+        printf("**** Password Changed! ****\n");
+    }
+    else
+        printf("Passwords do not match. Returning to logged in menu.\n");
+}
+
+void manage_posts(user_t *user)
+{
+    unsigned short int user_choice = 0;
+
+    print_post_menu(user);
+    while (true)
+    {
+        if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 4)
+        {
+            break;
+        }
+        printf("user_choice is %hu", user_choice);
+        printf("Your input is invalid. Enter a value between 1 and 3 please try again: ");
+    }
+    if (user_choice == 1)
+    {
+        printf("Please enter a post of up to 249 characters: ");
+        char post[MAX_POST_LENGTH];
+        scanf(" %[^\n]s", post);
+        add_post(user, post);
+    }
+    if (user_choice == 2)
+    {
+        if (delete_post(user) == false)
+            printf("No posts to be deleted. Returning to main menu\n");
+        else
+        {
+            printf("Post successfully deleted\n");
+            display_all_user_posts(user);
+        }
+    }
+}
+void print_menu2(user_t *user)
+{
+    printf("***********************************************\n"
+           "\t\tWelcome %s:\n"
+           "***********************************************\n"
+           "1. Manage profile (change password)\n"
+           "2. Manage posts (add/remove)\n"
+           "3. Manage friends (add/remove)\n"
+           "4. Display a friend's posts\n"
+           "5. Exit\n\n"
+           "Enter Your choice: ",
+           user->username);
+}
+void login(user_t *users)
 {
     char username[MAX_USERNAME];
     char password[MAX_PASSWORD];
-    printf("Enter a username to update their password: ");
+    printf("Enter a username: ");
     get_input_username(username);
-    user_t *user_to_be_changed;
-    user_to_be_changed = (find_user(users, username));
-    if (user_to_be_changed != NULL)
+    printf("Enter the password: ");
+    // doesn't use get input password cause they can try any length might just be wrong
+    scanf("%s", password);
+    user_t *login_user = find_user(users, username);
+    if (login_user != NULL && strcmp(login_user->password, password) == 0)
     {
-        printf("Enter the old password: ");
-        scanf("%s", password);
-        if (strcmp(user_to_be_changed->password, password) == 0)
-        {
-            printf("Enter a new password up to 14 characters: ");
-            get_input_password(password);
-            strcpy(user_to_be_changed->password, password);
-            printf("**** Password Changed! ****\n");
-        }
-        else
-            printf("Passwords do not match. Returning to main menu.\n");
+        printf("You are now logged in\n");
+        menu2_func(login_user, users);
     }
     else
-        printf("Username does not exist returning to main menu.\n");
+    {
+        printf("Username and or password are invalid. Returning to main menu\n");
+    }
 }
-void manage_posts(user_t *users)
+void menu2_func(user_t *user, user_t *users)
 {
-    char username[MAX_USERNAME];
     unsigned short int user_choice = 0;
-    printf("Enter a username to manage their posts: ");
-    get_input_username(username);
-    user_t *user_post_manage;
-    user_post_manage = (find_user(users, username));
-    if (user_post_manage == NULL)
+
+    while (true)
     {
-        printf("------------------------------------------------\n"
-               "\t\tUser not found.\n"
-               "------------------------------------------------\n");
-    }
-    else
-    {
-        char username[MAX_USERNAME];
-        print_post_menu(user_post_manage);
+        print_menu2(user);
+        unsigned short int user_choice = 0;
         while (true)
         {
-            if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 4)
+            if (scanf("%hu", &user_choice) == 1 && user_choice > 0 && user_choice < 6)
             {
                 break;
             }
             printf("user_choice is %hu", user_choice);
-            printf("Your input is invalid. Enter a value between 1 and 3 please try again: ");
+            printf("Your input is invalid please try again: ");
         }
-        if (user_choice == 1)
+        switch (user_choice)
         {
-            printf("Please enter a post of up to 249 characters: ");
-            char post[MAX_POST_LENGTH];
-            scanf(" %[^\n]s", post);
-            add_post(user_post_manage, post);
-        }
-        if (user_choice == 2)
-        {
-            if (delete_post(user_post_manage) == false)
-                printf("No posts to be deleted. Returning to main menu\n");
-            else
-            {
-                printf("Post successfully deleted\n");
-                display_all_user_posts(user_post_manage);
-            }
+        case 1:
+            manage_profile(user);
+            break;
+        case 2:
+            manage_posts(user);
+            break;
+        case 3:
+            manage_friends(user, users);
+            break;
+        case 4:
+            display_friend_posts(user);
+            break;
+        case 5:
+            return;
+            break;
         }
     }
 }
